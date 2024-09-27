@@ -17,22 +17,100 @@ app.use("/", (req, res)=>{
     res.send("Hello Hello Hello");
 })*/
 
+app.use(express.json())
 app.get("/", 
     userAuth
 )
 
 app.post("/signup", async(req,res)=>{
-    const userObj = {
-        firstName:"Shravani",
-        lastName:"Bairi",
-        email:"shravani@gamil.com",
-        password:"puchu"
-    }
+    // const userObj = {
+    //     firstName:"VinayKumar",
+    //     lastName:"Kurapati",
+    //     email:"Vinay@gamil.com",
+    //     password:"Vinay"
+    // }
+    const userObj = req.body
     const user = new User(userObj);
     await user.save();
     //Whenever we are trying to interact with DB it returns a promise, hence it is better to wrap the code with async await funtions
     res.send("user added successfully")
 
+})
+
+app.get("/user", async (req, res) => {
+    const userData = req.body
+    try{
+        const user = await User.findOne({email: userData.email})
+        console.log(user.length);
+        
+        if(user.length === 0){
+            res.send("user Not found")
+    }else{
+        res.send("user data read successfully")
+    }
+    } catch(err){
+        res.status(404).send("something went wrong")
+    }
+})
+app.post("/user", async (req, res) => {
+    const userData = req.body
+    try{
+        const user = await User.findOne({email: userData.email})
+        console.log(user.length);
+        
+        if(user.length === 0){
+            res.send("user Not found")
+    }else{
+        res.send("user data read successfully")
+    }
+    } catch(err){
+        res.status(404).send("something went wrong")
+    }
+})
+app.patch("/user", async (req, res) => {
+    const userData = req.body
+    const userId = req.body.userId
+    try{
+        const user = await User.findByIdAndUpdate(userId, userData)
+        
+        //the collection ignores the keys which are not present in the schema
+        if(user.length === 0){
+            res.send("user Not found")
+    }else{
+        res.send("user data updated successfully")
+    }
+    } catch(err){
+        res.status(404).send("something went wrong")
+    }
+})
+
+app.delete("/user", async (req,res) => {
+    
+    const userId = req.body.userId
+    try{
+        const user = await User.findByIdAndDelete(userId);
+        
+        if (user.length === 0){
+            res.status(404).send("user not found")
+        }else{
+            res.send("user Deleted successfully")
+        }
+    }catch(err) {
+        res.status(400).send("Something went wrong")
+    }
+})
+app.get("/feed", async (req, res) => {
+    const userData = req.body;
+    try{
+        const user = await User.find({})
+        if(user.length === 0) {
+            res.status(404).send("No users FOund")
+        }else{
+            res.send(user)
+        }
+    }catch(err){
+        res.status(400).send("Something went wrong");
+    }
 })
 connectDB()
     .then(()=>{
