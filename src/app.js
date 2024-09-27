@@ -2,6 +2,7 @@ const express = require("express");
 const app = express();
 const {userAuth} = require("./middlewares/auth");
 const connectDB = require("./config/database");
+const User = require("./models/users")
 
 /*app.get("/user", (req, res)=>{
     console.log(req.query)
@@ -16,10 +17,23 @@ app.use("/", (req, res)=>{
     res.send("Hello Hello Hello");
 })*/
 
-app.use("/user", 
+app.get("/", 
     userAuth
 )
 
+app.post("/signup", async(req,res)=>{
+    const userObj = {
+        firstName:"Shravani",
+        lastName:"Bairi",
+        email:"shravani@gamil.com",
+        password:"puchu"
+    }
+    const user = new User(userObj);
+    await user.save();
+    //Whenever we are trying to interact with DB it returns a promise, hence it is better to wrap the code with async await funtions
+    res.send("user added successfully")
+
+})
 connectDB()
     .then(()=>{
         console.log("Connection established to Database")
