@@ -29,11 +29,21 @@ app.post("/signup", async(req,res)=>{
     //     email:"Vinay@gamil.com",
     //     password:"Vinay"
     // }
-    const userObj = req.body
+    
+    try{
+        const userObj = req.body
     const user = new User(userObj);
+    if(!user){
+        throw new Error("invalid credentials")
+    }
     await user.save();
     //Whenever we are trying to interact with DB it returns a promise, hence it is better to wrap the code with async await funtions
     res.send("user added successfully")
+
+    }catch(err){
+        res.status(400).send("ERROR: " + err.message);
+    }
+    
 
 })
 
@@ -67,11 +77,21 @@ app.post("/user", async (req, res) => {
         res.status(404).send("something went wrong")
     }
 })
-app.patch("/user", async (req, res) => {
+app.patch("/user/:userId", async (req, res) => {
     const userData = req.body
-    const userId = req.body.userId
+    const userId = req.params?.userId
     try{
-        const user = await User.findByIdAndUpdate(userId, userData)
+        const ALLOWED_UPDATES = ["photoUrl", "aboutUser", "gender", "age", "skills" ]
+        const isUpdateAllowed = Object.keys(userData).every((key)=> ALLOWED_UPDATES.includes(key));
+        if(!isUpdateAllowed){
+            throw new Error("update not allowed");
+        }
+
+        const user = await User.findByIdAndUpdate(userId, userData, {
+            returnDocument: "before",
+            runValidators: true
+        });
+    
         
         //the collection ignores the keys which are not present in the schema
         if(user.length === 0){
@@ -80,7 +100,7 @@ app.patch("/user", async (req, res) => {
         res.send("user data updated successfully")
     }
     } catch(err){
-        res.status(404).send("something went wrong")
+        res.status(404).send("Update Failed:" + err.message)
     }
 })
 
