@@ -51,7 +51,23 @@ const userSchema = new mongoose.Schema({
         default: "This is default description of the User"
     },
     skills:{
-        type:["string"]
+        type:["string"],
+        validate(value){
+            if(value?.length>10){
+            throw new Error("Skills cannot be more than 10")
+        }
+        }
+        
+    },
+    photoUrl: {
+        type:"String",
+        default:"",
+        valudate(value){
+            if(!validator.isURL(value)){
+                throw new Error("invalid photo URL");
+            }
+        }
+
     }
 },
 {
