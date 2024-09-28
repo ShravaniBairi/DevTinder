@@ -3,6 +3,8 @@ const app = express();
 const {userAuth} = require("./middlewares/auth");
 const connectDB = require("./config/database");
 const User = require("./models/users")
+const {validateSignupData} = require("./utils/validation")
+const bcrypt = require("bcrypt")
 
 /*app.get("/user", (req, res)=>{
     console.log(req.query)
@@ -22,20 +24,22 @@ app.get("/",
     userAuth
 )
 
-app.post("/signup", async(req,res)=>{
-    // const userObj = {
-    //     firstName:"VinayKumar",
-    //     lastName:"Kurapati",
-    //     email:"Vinay@gamil.com",
-    //     password:"Vinay"
-    // }
-    
+app.post("/signup", async(req,res)=>{    
     try{
-        const userObj = req.body
-    const user = new User(userObj);
+        const {firstName, lastName, email, password} = req.body
+    //Validate the user Data
+    validateSignupData(req);
+    //encrypt the password
+    const encryptedPasswordHash = await bcrypt.hash(password, 10);
+
+    //Create new instance of user Model by saving the enctypted password
+    const user = new User({
+        firstName, lastName, email, password:encryptedPasswordHash
+    });
     if(!user){
         throw new Error("invalid credentials")
     }
+
     await user.save();
     //Whenever we are trying to interact with DB it returns a promise, hence it is better to wrap the code with async await funtions
     res.send("user added successfully")
@@ -43,9 +47,7 @@ app.post("/signup", async(req,res)=>{
     }catch(err){
         res.status(400).send("ERROR: " + err.message);
     }
-    
-
-})
+    })
 
 app.get("/user", async (req, res) => {
     const userData = req.body
@@ -86,6 +88,7 @@ app.patch("/user/:userId", async (req, res) => {
         if(!isUpdateAllowed){
             throw new Error("update not allowed");
         }
+        
 
         const user = await User.findByIdAndUpdate(userId, userData, {
             returnDocument: "before",
@@ -132,6 +135,7 @@ app.get("/feed", async (req, res) => {
         res.status(400).send("Something went wrong");
     }
 })
+
 connectDB()
     .then(()=>{
         console.log("Connection established to Database")
