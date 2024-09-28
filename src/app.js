@@ -31,7 +31,6 @@ app.post("/signup", async(req,res)=>{
     validateSignupData(req);
     //encrypt the password
     const encryptedPasswordHash = await bcrypt.hash(password, 10);
-
     //Create new instance of user Model by saving the enctypted password
     const user = new User({
         firstName, lastName, email, password:encryptedPasswordHash
@@ -43,11 +42,34 @@ app.post("/signup", async(req,res)=>{
     await user.save();
     //Whenever we are trying to interact with DB it returns a promise, hence it is better to wrap the code with async await funtions
     res.send("user added successfully")
-
     }catch(err){
         res.status(400).send("ERROR: " + err.message);
     }
     })
+
+app.post("/login", async (req, res) =>{
+    try{
+        const {email, password} = req.body;
+        //validate email
+        const user = await User.findOne({email:email});
+        if(!user){
+            throw new Error("invalid user Credentials");
+        }
+        //validate password
+        const isPasswordValid = await bcrypt.compare(password, user.password);
+        if(!isPasswordValid){
+            throw new Error("invalid Credentials");
+        }
+        res.send(user.firstName+" " + user.lastName+" login Successful");
+
+    }catch(err){
+        res.status(400).send("ERROR: " + err.message);
+    }
+
+
+
+
+})
 
 app.get("/user", async (req, res) => {
     const userData = req.body
