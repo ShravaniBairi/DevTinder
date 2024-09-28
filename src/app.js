@@ -5,21 +5,11 @@ const connectDB = require("./config/database");
 const User = require("./models/users")
 const {validateSignupData} = require("./utils/validation")
 const bcrypt = require("bcrypt")
-
-/*app.get("/user", (req, res)=>{
-    console.log(req.query)
-    res.send("Hello from the Dashboard");
-})
-app.post("/test/:userId/:name/:age", (req, res)=>{
-    console.log(req.params);
-
-    res.send("Hello from the server");
-})
-app.use("/", (req, res)=>{
-    res.send("Hello Hello Hello");
-})*/
+const cookieParser = require("cookie-parser");
+const jwt = require("jsonwebtoken")
 
 app.use(express.json())
+app.use(cookieParser())
 app.get("/", 
     userAuth
 )
@@ -50,113 +40,38 @@ app.post("/signup", async(req,res)=>{
 app.post("/login", async (req, res) =>{
     try{
         const {email, password} = req.body;
+        
         //validate email
         const user = await User.findOne({email:email});
         if(!user){
             throw new Error("invalid user Credentials");
         }
         //validate password
-        const isPasswordValid = await bcrypt.compare(password, user.password);
+        const isPasswordValid = await user.validatePassword(password);
         if(!isPasswordValid){
             throw new Error("invalid Credentials");
         }
+        const token = await user.getJWT();
+        res.cookie("token",token)
+
         res.send(user.firstName+" " + user.lastName+" login Successful");
 
     }catch(err){
         res.status(400).send("ERROR: " + err.message);
     }
-
-
-
-
 })
 
-app.get("/user", async (req, res) => {
-    const userData = req.body
+app.get("/profile",userAuth, async (req,res) => {
     try{
-        const user = await User.findOne({email: userData.email})
-        console.log(user.length);
         
-        if(user.length === 0){
-            res.send("user Not found")
-    }else{
-        res.send("user data read successfully")
-    }
-    } catch(err){
-        res.status(404).send("something went wrong")
-    }
-})
-app.post("/user", async (req, res) => {
-    const userData = req.body
-    try{
-        const user = await User.findOne({email: userData.email})
-        console.log(user.length);
-        
-        if(user.length === 0){
-            res.send("user Not found")
-    }else{
-        res.send("user data read successfully")
-    }
-    } catch(err){
-        res.status(404).send("something went wrong")
-    }
-})
-app.patch("/user/:userId", async (req, res) => {
-    const userData = req.body
-    const userId = req.params?.userId
-    try{
-        const ALLOWED_UPDATES = ["photoUrl", "aboutUser", "gender", "age", "skills" ]
-        const isUpdateAllowed = Object.keys(userData).every((key)=> ALLOWED_UPDATES.includes(key));
-        if(!isUpdateAllowed){
-            throw new Error("update not allowed");
-        }
-        
-
-        const user = await User.findByIdAndUpdate(userId, userData, {
-            returnDocument: "before",
-            runValidators: true
-        });
-    
-        
-        //the collection ignores the keys which are not present in the schema
-        if(user.length === 0){
-            res.send("user Not found")
-    }else{
-        res.send("user data updated successfully")
-    }
-    } catch(err){
-        res.status(404).send("Update Failed:" + err.message)
-    }
-})
-
-app.delete("/user", async (req,res) => {
-    
-    const userId = req.body.userId
-    try{
-        const user = await User.findByIdAndDelete(userId);
-        
-        if (user.length === 0){
-            res.status(404).send("user not found")
-        }else{
-            res.send("user Deleted successfully")
-        }
-    }catch(err) {
-        res.status(400).send("Something went wrong")
-    }
-})
-app.get("/feed", async (req, res) => {
-    const userData = req.body;
-    try{
-        const user = await User.find({})
-        if(user.length === 0) {
-            res.status(404).send("No users FOund")
-        }else{
-            res.send(user)
-        }
+        const user = req.user;
+        res.send(user);
     }catch(err){
-        res.status(400).send("Something went wrong");
+        res.status(400).send("ERROR: " + err.message);
     }
 })
+
+
 
 connectDB()
     .then(()=>{
