@@ -12,7 +12,7 @@ requestRouter.post("/request/send/:status/:toUserId", userAuth, async (req, res)
         const allowedStatus = ["ignored", "interested"]
         //validate the status to send a request
         if(!allowedStatus.includes(status)){
-            return res.status(400).json({message:"invalid Status Type"+status})
+            return res.status(400).json({message:"invalid Status Type: "+status})
         }
         //check whether user is sending connection request to himself
         if(toUserId == fromUserId){
@@ -33,7 +33,7 @@ requestRouter.post("/request/send/:status/:toUserId", userAuth, async (req, res)
             ]
         })              
         if(existingConnectionRequest){
-            return res.status.json({message:"connection request exists"});
+            return res.status(400).json({message:"connection request exists"});
         }
        
         const connectionRequest=new ConnectionRequest({fromUserId,
@@ -47,6 +47,33 @@ requestRouter.post("/request/send/:status/:toUserId", userAuth, async (req, res)
         })
     }catch(err){
         res.status(400).send("Error:" + err.message)
+    }
+})
+
+requestRouter.post("/request/review/:status/:requestId", userAuth, async (req, res) =>{
+    try{
+        const loggedInUser = req.user;
+        const allowedStatus = ["accepted", "rejected"]
+        const status = req.params.status;
+        const requestId = req.params.requestId;
+        if(!allowedStatus.includes(status)){
+            return res.status(400).json({message: "Status type not allowed: "+ status})
+        }
+        let connectionRequest = await ConnectionRequest.findOne({
+            _id :requestId,
+            toUserId: loggedInUser._id,
+            status: "interested"
+        })
+        if(!connectionRequest){
+            return res.status(400).json({message: "Connection not found"})
+        }
+        connectionRequest.status = status
+        const data = await connectionRequest.save();
+        res.json({message: "Connection request : " + status, data})
+
+    }catch(err){
+        res.status(400).send("ERROR: "+ err.message)
+        
     }
 })
 
