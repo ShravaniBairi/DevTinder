@@ -10,18 +10,38 @@ const {authRouter} = require("./routes/auth")
 const {profileRouter} = require("./routes/profile");
 const {requestRouter} = require("./routes/request")
 const {userRouter} = require("./routes/user")
+const cors = require("cors")
+
+app.use(cors({
+    origin: 'http://localhost:5173',  // Your frontend origin
+    methods: ['GET', 'POST'],         // Allowed methods
+    allowedHeaders: ['Content-Type', 'Authorization'],  // Allowed headers
+    credentials: true                 // Allow credentials
+  }));
+  
+  // Preflight handling for OPTIONS request
+  app.options('*', cors({
+    origin: 'http://localhost:5173',
+    credentials: true
+  }));
+  
+  // Apply the CORS middleware with the options
+
 
 app.use(express.json())
 app.use(cookieParser())
-app.get("/", 
-    userAuth
-)
 
+// app.use((req, res, next) => {
+//     res.header('Access-Control-Allow-Origin', '*');
+//     next();
+//   });
 app.use("/", authRouter);
 app.use("/", profileRouter);
 app.use("/", requestRouter);
 app.use("/", userRouter);
-
+app.use("/", (req,res)=>{
+    res.send("Hello World")
+})
 connectDB()
     .then(()=>{
         console.log("Connection established to Database")
